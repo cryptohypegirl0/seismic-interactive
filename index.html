@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seismic Art: Radiant & Floating</title>
+    <!-- 파비콘: 금색 'S' -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%23D4AF37%22>S</text></svg>">
+    
     <style>
         body {
             margin: 0; padding: 0; overflow: hidden; min-height: 100vh;
             background-color: #0c0b0d;
             background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url("./assets/a.png");
-            background-size: cover; background-position: center; font-family: 'Inter', Arial, sans-serif;
+            background-size: cover; background-position: center; background-repeat: no-repeat; font-family: 'Inter', Arial, sans-serif;
         }
         body::before {
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -18,7 +21,7 @@
         #enter-btn {
             position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
             padding: 16px 40px; background: rgba(255, 255, 255, 0.03); color: #F5F2EB;
-            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50px; cursor: pointer;
+            border: 1px solid rgba(245, 242, 235, 0.15); border-radius: 50px; cursor: pointer;
             font-size: 11px; letter-spacing: 5px; text-transform: uppercase;
             transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1); z-index: 100;
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); outline: none;
@@ -33,15 +36,47 @@
             line-height: 1.8; z-index: 50; pointer-events: none; text-transform: uppercase;
         }
         footer span { display: block; }
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 2; }
+
+        /* 크레딧 링크: 더 잘 보이게 수정 */
+        .credit-link {
+            position: absolute; bottom: 20px; right: 25px;
+            font-size: 11px; 
+            color: rgba(212, 175, 55, 0.6); /* 은은한 금색 */
+            text-decoration: none;
+            opacity: 0.7; 
+            transition: all 0.3s ease; 
+            z-index: 1000;
+            letter-spacing: 0.5px;
+            font-weight: 400;
+            border-bottom: 1px solid transparent;
+        }
+        .credit-link:hover { 
+            opacity: 1; 
+            color: rgba(255, 255, 255, 1); 
+            border-bottom: 1px solid rgba(212, 175, 55, 0.8);
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            mix-blend-mode: screen;
+        }
     </style>
 </head>
 <body>
     <button id="enter-btn">ENTER EXPERIENCE</button>
+
     <footer>
         <span>Built on Seismic.</span>
         <span>Privacy isn't a feature. It's the foundation.</span>
     </footer>
+
+    <!-- 수정된 크레딧 링크 -->
+    <a href="https://x.com/cryptohypegirl" target="_blank" class="credit-link">built by dada @cryptohypegirl</a>
 
     <script type="importmap">
         {
@@ -73,15 +108,16 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0);
         renderer.toneMapping = THREE.ReinhardToneMapping;
         document.body.appendChild(renderer.domElement);
 
         // --- BLOOM POST-PROCESSING ---
         const renderScene = new RenderPass(scene, camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.25; // 어느 밝기부터 빛날지
-        bloomPass.strength = 0.4;    // 빛나는 강도 (은은하게)
-        bloomPass.radius = 0.3;      // 빛 번짐 반경
+        bloomPass.threshold = 0.25; 
+        bloomPass.strength = 0.45;    
+        bloomPass.radius = 0.35;      
 
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene);
@@ -105,13 +141,6 @@
             }
         }
 
-        // 배경 파티클
-        const particlesMesh = new THREE.Points(
-            new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(800 * 3).map(() => (Math.random() - 0.5) * 200), 3)),
-            new THREE.PointsMaterial({ size: 0.12, color: 0xF5F2EB, transparent: true, opacity: 0.15 })
-        );
-        scene.add(particlesMesh);
-
         const letterMeshes = [];
         const chars = "SEISMIC".split("");
         const hexColors = [0xF5F2EB, 0xF2EFE7, 0xFFF8F0];
@@ -127,10 +156,10 @@
                 geometry.center();
                 const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ 
                     color: hexColors[i % hexColors.length], 
-                    metalness: 0.7, 
-                    roughness: 0.15,
+                    metalness: 0.8, 
+                    roughness: 0.1,
                     emissive: hexColors[i % hexColors.length],
-                    emissiveIntensity: 0.1 // 블룸 효과를 위한 미세한 발광
+                    emissiveIntensity: 0.06 
                 }));
                 const startX = -30 + (i * 10);
                 mesh.position.set(startX, 0, 0);
@@ -140,7 +169,15 @@
             });
         });
 
+        // --- MOUSE & PHYSICS LOGIC ---
         let mouse = new THREE.Vector2(), raycaster = new THREE.Raycaster(), draggedObject = null;
+
+        function getMouseWorldPos() {
+            const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+            const dir = vector.sub(camera.position).normalize();
+            const dist = -camera.position.z / dir.z;
+            return camera.position.clone().add(dir.multiplyScalar(dist));
+        }
 
         window.addEventListener('mousedown', (e) => {
             isReturning = false;
@@ -148,17 +185,14 @@
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(letterMeshes);
-            if (intersects.length > 0) draggedObject = intersects[0].object; draggedObject.userData.isDragging = true;
+            if (intersects.length > 0) { draggedObject = intersects[0].object; draggedObject.userData.isDragging = true; }
         });
 
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             if (draggedObject) {
-                const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
-                const dir = vector.sub(camera.position).normalize();
-                const dist = -camera.position.z / dir.z;
-                const pos = camera.position.clone().add(dir.multiplyScalar(dist));
+                const pos = getMouseWorldPos();
                 draggedObject.userData.velocity.subVectors(pos, draggedObject.position).multiplyScalar(0.4);
                 draggedObject.position.copy(pos);
             }
@@ -169,31 +203,21 @@
 
         function animate() {
             requestAnimationFrame(animate);
-
             const time = Date.now() * 0.001;
 
-            // 카메라 쉐이크
             if (shakeIntensity > 0.01) {
                 const t = Date.now() * 0.04;
                 camera.position.x = Math.sin(t) * shakeIntensity;
                 camera.position.y = Math.cos(t * 0.8) * shakeIntensity;
                 shakeIntensity *= SHAKE_DECAY;
-            } else {
-                camera.position.set(0, 0, 60);
-                shakeIntensity = 0;
-            }
+            } else { camera.position.set(0, 0, 60); shakeIntensity = 0; }
 
-            // 스파크 업데이트
             for (let i = sparks.length - 1; i >= 0; i--) {
-                const s = sparks[i];
-                s.position.add(s.userData.velocity);
-                s.userData.life -= 0.05;
-                s.material.opacity = s.userData.life;
-                s.scale.setScalar(s.userData.life);
+                const s = sparks[i]; s.position.add(s.userData.velocity); s.userData.life -= 0.05;
+                s.material.opacity = s.userData.life; s.scale.setScalar(s.userData.life);
                 if (s.userData.life <= 0) { scene.remove(s); s.material.dispose(); sparks.splice(i, 1); }
             }
 
-            particlesMesh.rotation.y += 0.0002;
             const edgeX = (window.innerWidth / 25) + 25;
             const edgeY = (window.innerHeight / 25) + 20;
 
@@ -207,27 +231,21 @@
                     meshA.position.add(ud.velocity);
                     ud.velocity.multiplyScalar(friction);
 
-                    // --- AMBIENT FLOATING (아주아주 천천히 떠다님) ---
                     if (ud.velocity.length() < 0.05) {
                         meshA.position.y += Math.sin(time * 0.8 + ud.floatOffset) * 0.008;
                     }
 
-                    // 벽 충돌
                     if (Math.abs(meshA.position.x) > edgeX) {
                         if (Math.abs(ud.velocity.x) > SPARK_THRESHOLD) createSparks(meshA.position, 8);
-                        meshA.position.x = Math.sign(meshA.position.x) * edgeX;
-                        ud.velocity.x *= -wallBounce;
+                        meshA.position.x = Math.sign(meshA.position.x) * edgeX; ud.velocity.x *= -wallBounce;
                     }
                     if (Math.abs(meshA.position.y) > edgeY) {
                         if (Math.abs(ud.velocity.y) > SPARK_THRESHOLD) createSparks(meshA.position, 8);
-                        meshA.position.y = Math.sign(meshA.position.y) * edgeY;
-                        ud.velocity.y *= -wallBounce;
+                        meshA.position.y = Math.sign(meshA.position.y) * edgeY; ud.velocity.y *= -wallBounce;
                     }
-                    meshA.rotation.x += ud.velocity.y * 0.05;
-                    meshA.rotation.y += ud.velocity.x * 0.05;
+                    meshA.rotation.x += ud.velocity.y * 0.05; meshA.rotation.y += ud.velocity.x * 0.05;
                 }
 
-                // 글자 간 충돌
                 if(!isReturning) {
                     for (let j = i + 1; j < letterMeshes.length; j++) {
                         const meshB = letterMeshes[j];
@@ -240,15 +258,14 @@
                                 createSparks(new THREE.Vector3().addVectors(meshA.position, meshB.position).multiplyScalar(0.5), 12);
                                 shakeIntensity = Math.min(shakeIntensity + relVel * 0.15, 0.6);
                             }
-                            const normal = diff.normalize();
-                            const force = normal.multiplyScalar((minD - dist) * 0.05);
+                            const force = diff.normalize().multiplyScalar((minD - dist) * 0.05);
                             if (!ud.isDragging) ud.velocity.add(force);
                             if (!meshB.userData.isDragging) meshB.userData.velocity.sub(force);
                         }
                     }
                 }
             });
-            composer.render(); // renderer.render 대신 composer.render 호출
+            composer.render();
         }
 
         window.addEventListener('resize', () => {
